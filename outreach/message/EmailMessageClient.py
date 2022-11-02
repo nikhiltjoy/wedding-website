@@ -19,7 +19,7 @@ GMAIL_SMTP_PORT = 587
 
 def get_random_names() -> str:
     names = ["Nikhil", "Joanne"]
-    random.shuffle(names)
+    # random.shuffle(names)
     return '+'.join(names)
 
 
@@ -84,7 +84,10 @@ class EmailMessageClient(BaseMessageClient):
         msg['To'] = ', '.join(recipients)
         msg['Date'] = formatdate(localtime=True)
         msg["subject"] = subject
-        msg.attach(MIMEText(message))
+        if message.endswith("</html>"):
+            msg.attach(MIMEText(message, "html"))
+        else:
+            msg.attach(MIMEText(message, "plain"))
         if files:
             for path in files:
                 part = MIMEBase('application', "octet-stream")
