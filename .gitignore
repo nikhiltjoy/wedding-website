@@ -1,0 +1,6 @@
+.env
+.ipynb_checkpoints
+PyWhatKit_DB.txt
+.idea
+outreach/data/guests_db.csv
+*.pyc
