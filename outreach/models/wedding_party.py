@@ -1,38 +1,22 @@
-from collections import defaultdict
-from jinja2 import Template
+from collections import defaultdict, OrderedDict
 from pathlib import Path
-from typing import Dict, Mapping, List
+from typing import Mapping, List
 
-from outreach.message.EmailMessageClient import (
-    get_wedding_name,
-    EmailMessageClient,
-    get_random_names,
-)
-from outreach.message.MessengerMessageClient import MessengerMessageClient
+from outreach.data.repository.google_sheets import GSheetClient
+from outreach.message.EmailMessageClient import check_if_valid_email
 from outreach.models.party import Party, Guest
 import pandas as pd
 import numpy as np
 
 
 class WeddingParty:
-    def __init__(
-        self,
-        data_dir: Path,
-        wedding_props: Dict,
-    ):
-        self.data_dir = data_dir
-        self.save_the_date_paths = {
-            p.stem: p
-            for p in (self.data_dir / "images" / "save_the_dates").iterdir()
-            if p.is_file()
-        }
-        self.all_parties: Mapping[int, Party] = {}
-        self.all_guests: Mapping[int, Guest] = {}
-        self.wedding_props = wedding_props
-        guest_df = pd.read_csv(
-            (self.data_dir / "guests_db.csv"),
-            dtype={"user_whatsapp": str, "user_messenger": str},
-        ).replace([np.nan], [None])
+    def __init__(self, gc_client: GSheetClient, sheet_id: str):
+        self.gc_client = gc_client
+        self.sheet_id = sheet_id
+        guest_df = self.gc_client.get_dataframe_from_sheet(self.sheet_id)
+        self.all_parties: Mapping[int, Party] = OrderedDict()
+        self.all_guests: Mapping[int, Guest] = OrderedDict()
+        guest_df = guest_df.replace([np.nan], [None])
         _tmp_parties: Mapping[int, List[Guest]] = defaultdict(list)
         for i, row in guest_df.iterrows():
             guest = Guest(row.to_dict())
@@ -47,114 +31,26 @@ class WeddingParty:
     def get_party(self, party_id: int):
         return self.all_parties.get(party_id)
 
-    def send_save_the_date_email(self, email_client: EmailMessageClient, party: Party):
-        email_vars = {
-            "subject": f"[{get_wedding_name()}] Hi {party.get_first_names()}!",
-            "names": party.get_first_names(),
-            "is_invited_india": party.primary_guest.is_invited_india,
-            "is_invited_sydney": party.primary_guest.is_invited_sydney,
-            "num_guests": len(party.get_guests())
-        }
-        email_template_dir = self.data_dir / "templates" / "email" / "save_the_date"
+    def get_all_party_ids(self) -> List[int]:
+        return list(self.all_parties.keys())
 
-        files_to_send = []
-        email_template_name = "template.html"
+    def get_parties_with_emails(self) -> List[int]:
+        valid_parties = []
+        for p in self.get_all_party_ids():
+            for g in self.all_parties[p].get_guests():
+                if check_if_valid_email(g.email):
+                    valid_parties.append(p)
+                    break
+        return valid_parties
 
-        if (
-            party.primary_guest.is_invited_india
-            and party.primary_guest.is_invited_sydney
-        ):
-            files_to_send = list(self.save_the_date_paths.values())
-        elif party.primary_guest.is_invited_sydney:
-            files_to_send = [self.save_the_date_paths["sydney"]]
-        elif party.primary_guest.is_invited_india:
-            files_to_send = [self.save_the_date_paths["india"]]
+    def _get_guest_df(self):
+        records = [g.get_guest_as_dict() for g in self.all_guests.values()]
+        return pd.DataFrame.from_records(data=records)
 
-        if not files_to_send:
-            return
+    def persist_local(self, local_pq_path: Path):
+        self._get_guest_df().to_parquet(local_pq_path)
 
-        with open(email_template_dir / email_template_name) as f:
-            msg = Template(f.read()).render(**email_vars)
-
-        email_client.send_message(
-            party=party,
-            message=msg,
-            subject=email_vars["subject"],
-            img_paths=files_to_send,
-        )
-
-    def send_save_the_date_messenger(
-        self, messenger_client: MessengerMessageClient, party: Party
-    ):
-        def _sydney_msg():
-            msg = (
-                f"Hey {party.get_first_names()},\nWe'd love for you to attend"
-                f" our wedding in Sydney on Saturday, October 7, 2023. Please "
-                f"find the attached save the date.\n\nPlease email us if you can't"
-                f" make it!\n\nWe'll be sending out formal invitations soon,"
-                f" and an official website is in the works.\n\n"
-            )
-            if len(party.get_guests()) > 2:
-                msg = msg + "Looking forward to celebrating with all of you!\n\n"
-            elif len(party.get_guests()) == 2:
-                msg = msg + "Looking forward to celebrating with both of you!\n\n"
-            else:
-                msg = msg + "Looking forward to celebrating with you!\n\n"
-            return msg + f"Best,\n{get_random_names()}"
-
-        def _india_msg():
-            msg = (
-                f"Hey {party.get_first_names()},\nWe'd love for you to attend"
-                f" our wedding in Kochi, India on Sunday, October 15, 2023. Please"
-                f" find the attached save the date.\n\nPlease email us if you"
-                f" can't make it!\n\nWe'll be sending out formal invitations soon,"
-                f" and an official website is in the works.\n\n"
-            )
-            if len(party.get_guests()) > 2:
-                msg = msg + "Looking forward to celebrating with all of you!\n\n"
-            elif len(party.get_guests()) == 2:
-                msg = msg + "Looking forward to celebrating with both of you!\n\n"
-            else:
-                msg = msg + "Looking forward to celebrating with you!\n\n"
-            return msg + f"Best,\n{get_random_names()}"
-
-        def _both_msg():
-            msg = (
-                f"Hey {party.get_first_names()},\nWe'd love for you to attend"
-                f" our wedding in Sydney, Australia on Saturday, October 7, 2023"
-                f" and Kochi, India on Sunday, October 15, 2023. Please"
-                f" find the attached save the dates.\n\nPlease let us know "
-                f"what your availability is! We realize attending two"
-                f' "destination" weddings is a big commitment,'
-                f" and we appreciate you! Let us know if you can come to either/"
-                f"both!\n\nWe'll be sending out formal invitations soon,"
-                f" and an official website is in the works.\n\n"
-            )
-            if len(party.get_guests()) > 2:
-                msg = msg + "Looking forward to celebrating with all of you!\n\n"
-            elif len(party.get_guests()) == 2:
-                msg = msg + "Looking forward to celebrating with both of you!\n\n"
-            else:
-                msg = msg + "Looking forward to celebrating with you!\n\n"
-            return msg + f"Best,\n{get_random_names()}"
-
-        msg = ""
-        files_to_send = []
-
-        if (
-            party.primary_guest.is_invited_india
-            and party.primary_guest.is_invited_sydney
-        ):
-            msg = _both_msg()
-            files_to_send = list(self.save_the_date_paths.values())
-        elif party.primary_guest.is_invited_sydney:
-            msg = _sydney_msg()
-            files_to_send = [self.save_the_date_paths["sydney"]]
-        elif party.primary_guest.is_invited_india:
-            msg = _india_msg()
-            files_to_send = [self.save_the_date_paths["india"]]
-
-        if not msg:
-            return
-
-        messenger_client.send_message(party=party, message=msg, img_paths=files_to_send)
+    def persist(self, local_pq_path: Path = None):
+        if local_pq_path:
+            self.persist_local(local_pq_path)
+        self.gc_client.set_sheet_from_dataframe(self._get_guest_df(), self.sheet_id)

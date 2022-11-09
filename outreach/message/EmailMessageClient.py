@@ -57,20 +57,21 @@ class EmailMessageClient(BaseMessageClient):
         subject: str = get_default_email_subject(),
         img_paths: Optional[List[Path]] = None,
     ):
-        valid_emails = []
-        for email in [g.email for g in party.get_guests()]:
-            if not check_if_valid_email(email):
-                print(f"Invalid Email: {email}")
+        valid_guests = []
+        for g in party.get_guests():
+            if not check_if_valid_email(g.email):
+                print(f"Invalid Email: {g.email}")
                 continue
-            valid_emails.append(email)
-        if not valid_emails:
-            return
+            valid_guests.append(g)
+        if not valid_guests:
+            return {}
         self._send_plaintext_email(
-            recipients=valid_emails,
+            recipients=[g.email for g in valid_guests],
             message=message,
             files=img_paths,
             subject=subject
         )
+        return valid_guests
 
     def _send_plaintext_email(
         self,

@@ -2,5 +2,6 @@
 .ipynb_checkpoints
 PyWhatKit_DB.txt
 .idea
-outreach/data/guests_db.csv
+outreach/data/guests_db.*
 *.pyc
+creds.json

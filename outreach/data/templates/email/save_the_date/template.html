@@ -313,10 +313,11 @@
 				* @section header image
 				* @tip Make the main header image fluid for portrait or landscape view adaptability, and set the image's original width as the max-width. If a fluid setting doesn't work, set the image width to half its original size instead.
 				*/
-				#headerImage{
+				.headerImage{
 					height:auto !important;
 					/*@editable*/ max-width:600px !important;
 					/*@editable*/ width:100% !important;
+					background-color:white;
 				}
 
 				/**
@@ -383,9 +384,9 @@
                                         <tr>
                                             <td valign="top" class="headerContent">
                                                 {% if is_invited_sydney %}
-                                            	<img src="https://github.com/nikhiltjoy/wedding-website/raw/main/outreach/data/images/save_the_dates/email/sydney.png" style="max-width:600px;" id="headerImage0" mc:label="header_image" mc:edit="header_image" mc:allowdesigner mc:allowtext />
+                                            	<img src="https://github.com/nikhiltjoy/wedding-website/raw/main/outreach/data/images/save_the_dates/email/sydney.png" style="max-width:600px;" class="headerImage" id="headerImage0" mc:label="header_image" mc:edit="header_image" mc:allowdesigner mc:allowtext />
                                                 {% else %}
-                                                <img src="https://github.com/nikhiltjoy/wedding-website/raw/main/outreach/data/images/save_the_dates/email/india.png" style="max-width:600px;" id="headerImage2" mc:label="header_image" mc:edit="header_image" mc:allowdesigner mc:allowtext />
+                                                <img src="https://github.com/nikhiltjoy/wedding-website/raw/main/outreach/data/images/save_the_dates/email/india.png" style="max-width:600px;" class="headerImage" id="headerImage2" mc:label="header_image" mc:edit="header_image" mc:allowdesigner mc:allowtext />
                                                 {% endif %}
                                             </td>
                                         </tr>
@@ -409,13 +410,13 @@
                                                 Dear {{names}}, <p>
 												We’re getting married! We would love to see you at our wedding in
                                                 {% if is_invited_sydney %}
-                                                Sydney, Australia on 7 October 2023
+                                                Sydney, Australia on October 7, 2023
                                                 {% endif %}
                                                 {% if is_invited_sydney and is_invited_india %}
                                                 and
                                                 {% endif %}
                                                 {% if is_invited_india %}
-                                                Kochi, India on 15 October 2023
+                                                Kochi, India on October 15, 2023
                                                 {% endif %}
                                                 and kindly ask that you
                                                 {% if num_guests == 2 %}
@@ -423,7 +424,7 @@
                                                 {% endif %}
                                                 {% if num_guests > 2 %}
                                                 all
-                                                {% endif %} to save the date.<p>
+                                                {% endif %} save the date.<p>
 												We don’t need a formal RSVP at this point, but if you already know you can or can’t make it, we would appreciate a heads-up.<p>
 												More details to follow. We hope to see you
                                                 {% if num_guests == 2 %}
@@ -447,7 +448,7 @@
                                     <table border="0" cellpadding="0" cellspacing="0" width="100%" id="templateHeader1">
                                         <tr>
                                             <td valign="top" class="headerContent">
-                                            	<img src="https://github.com/nikhiltjoy/wedding-website/raw/main/outreach/data/images/save_the_dates/email/india.png" style="max-width:600px;" id="headerImage1" mc:label="header_image" mc:edit="header_image" mc:allowdesigner mc:allowtext />
+                                            	<img src="https://github.com/nikhiltjoy/wedding-website/raw/main/outreach/data/images/save_the_dates/email/india.png" style="max-width:600px;" class="headerImage" id="headerImage1" mc:label="header_image" mc:edit="header_image" mc:allowdesigner mc:allowtext />
                                             </td>
                                         </tr>
                                     </table>
@@ -462,7 +463,7 @@
                                         <tr>
                                             <td valign="top" class="footerContent" style="padding-top:0;" mc:edit="footer_content01">
                                             	<p>
-                                            	Made with <span style="color: #e25555;">&hearts;</span> by Nikhil in NYC
+                                            	Made with <span style="color: #e25555;">&hearts;</span> by Nikhil & Jo in NYC
                                             </td>
                                         </tr>
                                     </table>
